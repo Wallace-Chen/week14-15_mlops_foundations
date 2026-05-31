@@ -89,7 +89,10 @@ def main() -> None:
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
 
     # Use the most recent available row as a deterministic serving sample.
-    sample_payload = build_request_from_row(df.iloc[-1], feature_names)
+    sample_payload = {
+        "ticker": "SPY",
+        "features": build_request_from_row(df.iloc[-1], feature_names),
+    }
     sample_request_path.write_text(json.dumps(sample_payload, indent=2) + "\n", encoding="utf-8")
 
     print(f"Saved model: {model_path}")

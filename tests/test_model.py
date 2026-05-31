@@ -22,7 +22,7 @@ class ModelTests(unittest.TestCase):
         load_model(PROJECT_ROOT / "models" / "model.pkl")
         payload = json.loads((PROJECT_ROOT / "data" / "sample_request.json").read_text())
         result = predict(
-            payload,
+            payload["features"],
             PROJECT_ROOT / "models" / "model.pkl",
             PROJECT_ROOT / "models" / "metadata.json",
         )

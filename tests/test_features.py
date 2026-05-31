@@ -14,15 +14,16 @@ class FeatureTests(unittest.TestCase):
     def test_sample_request_matches_metadata_order(self):
         metadata = load_metadata(PROJECT_ROOT / "models" / "metadata.json")
         payload = json.loads((PROJECT_ROOT / "data" / "sample_request.json").read_text())
-        vector = request_to_feature_vector(payload, metadata["features"])
+        vector = request_to_feature_vector(payload["features"], metadata["features"])
         self.assertEqual(vector.shape, (1, len(metadata["features"])))
 
     def test_missing_feature_is_rejected(self):
         metadata = load_metadata(PROJECT_ROOT / "models" / "metadata.json")
         payload = json.loads((PROJECT_ROOT / "data" / "sample_request.json").read_text())
-        payload.pop(metadata["features"][0])
+        features = dict(payload["features"])
+        features.pop(metadata["features"][0])
         with self.assertRaises(FeatureValidationError):
-            request_to_feature_vector(payload, metadata["features"])
+            request_to_feature_vector(features, metadata["features"])
 
 
 if __name__ == "__main__":

@@ -40,3 +40,25 @@ SPY_features.csv
 - Metadata records the exact feature order required at inference time.
 - Feature validation happens before model prediction.
 - Training code and serving/inference code are separated.
+
+
+## FastAPI service (Day 3-4)
+
+Run the API locally:
+
+```bash
+PYTHONPATH=src uvicorn financial_mlops.service:app --host 0.0.0.0 --port 8000
+# or
+python3 scripts/run_local_api.py
+```
+
+Validate the running service:
+
+```bash
+python3 scripts/smoke_test_api.py
+curl http://localhost:8000/health
+curl http://localhost:8000/metadata
+curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d @data/sample_request.json
+```
+
+The service loads `models/model.pkl` and `models/metadata.json` once at startup, then uses the metadata feature list to validate and order every prediction request.
