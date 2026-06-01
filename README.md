@@ -63,7 +63,39 @@ curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -
 
 The service loads `models/model.pkl` and `models/metadata.json` once at startup, then uses the metadata feature list to validate and order every prediction request.
 
-## Week 14 Interview Talking Points: Days 1-4
+
+## Dockerized service (Day 5-6)
+
+Build the image:
+
+```bash
+./scripts/build_docker.sh
+# or
+docker build -t financial-mlops-api:latest .
+```
+
+Run the container:
+
+```bash
+docker run --rm -p 8000:8000 financial-mlops-api:latest
+```
+
+Or use Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+Confirm the containerized API:
+
+```bash
+curl http://localhost:8000/health
+python3 scripts/smoke_test_api.py
+```
+
+The image contains only the serving package, model artifact, metadata, config, sample request, and documentation needed at runtime. The original training CSV and notebooks are intentionally not copied into the serving image.
+
+## Week 14 Interview Talking Points: Days 1-6
 
 ### Day 1-2: Project Skeleton + Model Artifact
 
@@ -100,3 +132,22 @@ Invalid client payloads should return a 4xx error, not a server crash. This serv
 **How would you monitor latency and prediction distribution?**
 
 Start with structured logs containing request id, ticker, prediction, probability, and latency. Over time, aggregate those logs into metrics: p50/p95/p99 latency, error rates, request volume, prediction class balance, probability distribution drift, and feature-value drift. Those signals help detect both infrastructure problems and model/data degradation.
+
+### Day 5-6: Dockerize the Service
+
+**Why use containers for model serving?**
+
+Containers package the API code, Python dependencies, model artifact, metadata, and runtime command into one repeatable unit. That makes the service easier to run on another machine, in CI, or later in cloud deployment because the environment is defined by the image instead of by a developer laptop.
+
+**What belongs inside the image vs mounted at runtime?**
+
+The image should include stable runtime assets: application code, pinned dependencies, the approved model artifact, metadata, config defaults, and a small sample request. Runtime-specific items such as secrets, environment-specific config, large logs, and frequently changing artifacts should be injected through environment variables, secret managers, volumes, or deployment tooling.
+
+**Why avoid copying training data into the serving image?**
+
+Training data increases image size, slows builds and deployments, and can expose data that the inference service does not need. A serving image should have the minimum assets required to answer prediction requests. Training data belongs in the training pipeline or artifact store, not in the production API container.
+
+**What makes a Docker image reproducible?**
+
+A reproducible image has an explicit base image, dependency file, deterministic build steps, and a clear runtime command. It avoids hidden host assumptions and excludes unnecessary local files with `.dockerignore`. For stricter production reproducibility, pin package versions and use immutable base image digests.
+
