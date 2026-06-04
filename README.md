@@ -12,11 +12,37 @@ This project turns the earlier financial ML SPY feature dataset into a clean, se
 - `src/financial_mlops/model.py` — loads artifact + metadata and exposes prediction helpers
 - `data/sample_request.json` — deterministic sample input for smoke tests / future API tests
 
+
+## Week 15 Day 1-2 outputs: Unit Tests and API Tests
+
+The Week 15 testing pass adds pytest-based coverage for the model-serving contract:
+
+- `tests/test_features.py` — verifies feature vector length/order and clear feature validation errors.
+- `tests/test_model.py` — verifies saved artifacts, metadata completeness, prediction output, and probability range.
+- `tests/test_api.py` — verifies `/health`, `/metadata`, valid `/predict`, missing-feature rejection, and malformed request rejection.
+- `requirements.txt` — includes `pytest` and `httpx` so FastAPI `TestClient` works in local and CI-style environments.
+- `pyproject.toml` — configures pytest to discover tests and import the `src/` package without manual `PYTHONPATH` hacks.
+
+Run the test suite:
+
+```bash
+pytest -q
+```
+
+Expected result after this pass:
+
+```text
+10 passed
+```
+
 ## Quick start
 
 ```bash
-python3 scripts/train_baseline_model.py
-python3 -m unittest discover -s tests -v
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python scripts/train_baseline_model.py
+pytest -q
 ```
 
 ## Architecture sketch
@@ -150,4 +176,18 @@ Training data increases image size, slows builds and deployments, and can expose
 **What makes a Docker image reproducible?**
 
 A reproducible image has an explicit base image, dependency file, deterministic build steps, and a clear runtime command. It avoids hidden host assumptions and excludes unnecessary local files with `.dockerignore`. For stricter production reproducibility, pin package versions and use immutable base image digests.
+
+## Week 15 Interview Talking Points: Day 1-2 Testing
+
+### How do you test ML code when model predictions can change?
+
+Do not overfit tests to one exact predicted class unless the fixture and model artifact are intentionally frozen. For serving tests, focus on deterministic contracts: the model loads, the feature vector has the expected shape/order, the prediction field exists, the class is in the valid label set, and the probability is in `[0, 1]`. If exact outputs matter, pin the model artifact, sample request, dependency versions, and random seeds, then treat that as a golden-file or regression test.
+
+### What should be deterministic in a serving pipeline?
+
+The request schema, required feature names, feature ordering, validation behavior, model artifact version, response schema, and error semantics should be deterministic. For the same model artifact and same input payload, preprocessing and inference should produce the same shaped feature vector and a valid, repeatable response. Operational values such as request id and latency can vary, but their presence and types should still be tested.
+
+### What is the difference between validating shape and validating performance?
+
+Shape validation checks engineering correctness: does the request contain the right features, can they be converted to numbers, does the model receive the expected 2D array, and does the API return the promised fields? Performance validation checks model quality: accuracy, precision/recall, ROC-AUC, calibration, drift, or business metrics. A model can pass shape tests while performing poorly, so CI should catch contract regressions while offline evaluation and monitoring track predictive quality.
 

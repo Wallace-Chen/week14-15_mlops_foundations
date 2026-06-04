@@ -1,35 +1,41 @@
 import json
-import sys
 from pathlib import Path
-import unittest
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from financial_mlops.model import load_metadata, load_model, predict
 
-
-class ModelTests(unittest.TestCase):
-    def test_artifacts_exist_and_metadata_is_complete(self):
-        self.assertTrue((PROJECT_ROOT / "models" / "model.pkl").exists())
-        metadata = load_metadata(PROJECT_ROOT / "models" / "metadata.json")
-        self.assertEqual(metadata["model_name"], "spy_direction_baseline")
-        self.assertEqual(metadata["target"], "next_day_direction")
-        self.assertGreater(len(metadata["features"]), 10)
-        self.assertIn("training_data", metadata)
-
-    def test_model_loads_and_predicts_sample_request(self):
-        load_model(PROJECT_ROOT / "models" / "model.pkl")
-        payload = json.loads((PROJECT_ROOT / "data" / "sample_request.json").read_text())
-        result = predict(
-            payload["features"],
-            PROJECT_ROOT / "models" / "model.pkl",
-            PROJECT_ROOT / "models" / "metadata.json",
-        )
-        self.assertIn(result["predicted_direction"], [0, 1])
-        self.assertGreaterEqual(result["probability_up"], 0.0)
-        self.assertLessEqual(result["probability_up"], 1.0)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MODEL_PATH = PROJECT_ROOT / "models" / "model.pkl"
+METADATA_PATH = PROJECT_ROOT / "models" / "metadata.json"
 
 
-if __name__ == "__main__":
-    unittest.main()
+def load_sample_features() -> dict[str, float]:
+    sample = json.loads((PROJECT_ROOT / "data" / "sample_request.json").read_text(encoding="utf-8"))
+    return sample["features"]
+
+
+def test_artifacts_exist_and_metadata_is_complete():
+    assert MODEL_PATH.exists()
+    assert METADATA_PATH.exists()
+
+    metadata = load_metadata(METADATA_PATH)
+
+    assert metadata["model_name"] == "spy_direction_baseline"
+    assert metadata["version"] == "0.1.0"
+    assert metadata["target"] == "next_day_direction"
+    assert len(metadata["features"]) > 10
+    assert metadata["model_type"].startswith("sklearn.")
+    assert set(metadata["metrics"]) >= {"accuracy", "f1", "roc_auc"}
+
+
+def test_model_returns_prediction_and_probability_for_sample_request():
+    model = load_model(MODEL_PATH)
+    assert hasattr(model, "predict")
+
+    result = predict(load_sample_features(), MODEL_PATH, METADATA_PATH)
+
+    assert result["model_name"] == "spy_direction_baseline"
+    assert result["version"] == "0.1.0"
+    assert result["target"] == "next_day_direction"
+    assert result["predicted_direction"] in {0, 1}
+    assert "probability_up" in result
+    assert 0.0 <= result["probability_up"] <= 1.0

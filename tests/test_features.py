@@ -1,30 +1,48 @@
 import json
-import sys
 from pathlib import Path
-import unittest
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+import pytest
 
 from financial_mlops.features import FeatureValidationError, request_to_feature_vector
 from financial_mlops.model import load_metadata
 
-
-class FeatureTests(unittest.TestCase):
-    def test_sample_request_matches_metadata_order(self):
-        metadata = load_metadata(PROJECT_ROOT / "models" / "metadata.json")
-        payload = json.loads((PROJECT_ROOT / "data" / "sample_request.json").read_text())
-        vector = request_to_feature_vector(payload["features"], metadata["features"])
-        self.assertEqual(vector.shape, (1, len(metadata["features"])))
-
-    def test_missing_feature_is_rejected(self):
-        metadata = load_metadata(PROJECT_ROOT / "models" / "metadata.json")
-        payload = json.loads((PROJECT_ROOT / "data" / "sample_request.json").read_text())
-        features = dict(payload["features"])
-        features.pop(metadata["features"][0])
-        with self.assertRaises(FeatureValidationError):
-            request_to_feature_vector(features, metadata["features"])
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+METADATA = load_metadata(PROJECT_ROOT / "models" / "metadata.json")
 
 
-if __name__ == "__main__":
-    unittest.main()
+def load_sample_features() -> dict[str, float]:
+    sample = json.loads((PROJECT_ROOT / "data" / "sample_request.json").read_text(encoding="utf-8"))
+    return sample["features"]
+
+
+def test_feature_vector_has_expected_length_and_order():
+    features = load_sample_features()
+
+    vector = request_to_feature_vector(features, METADATA["features"])
+
+    assert vector.shape == (1, len(METADATA["features"]))
+    assert vector[0, 0] == pytest.approx(features[METADATA["features"][0]])
+    assert vector[0, -1] == pytest.approx(features[METADATA["features"][-1]])
+
+
+def test_missing_feature_raises_clear_error():
+    features = load_sample_features()
+    missing_feature = METADATA["features"][0]
+    features.pop(missing_feature)
+
+    with pytest.raises(FeatureValidationError, match="missing keys") as exc_info:
+        request_to_feature_vector(features, METADATA["features"])
+
+    assert missing_feature in str(exc_info.value)
+
+
+def test_non_numeric_feature_raises_clear_error():
+    features = load_sample_features()
+    bad_feature = METADATA["features"][0]
+    features[bad_feature] = "not-a-number"
+
+    with pytest.raises(FeatureValidationError) as exc_info:
+        request_to_feature_vector(features, METADATA["features"])
+
+    assert bad_feature in str(exc_info.value)
+    assert "must be numeric" in str(exc_info.value)
