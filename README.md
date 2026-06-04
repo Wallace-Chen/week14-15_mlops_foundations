@@ -26,13 +26,20 @@ The Week 15 testing pass adds pytest-based coverage for the model-serving contra
 Run the test suite:
 
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
 Expected result after this pass:
 
 ```text
 10 passed
+```
+
+If your shell says `pytest: command not found`, either activate the project venv first or run pytest through Python directly:
+
+```bash
+source .venv/bin/activate
+python -m pytest -q
 ```
 
 ## Quick start
@@ -42,7 +49,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 python scripts/train_baseline_model.py
-pytest -q
+python -m pytest -q
 ```
 
 ## Architecture sketch
