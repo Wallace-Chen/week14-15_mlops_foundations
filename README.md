@@ -42,6 +42,28 @@ source .venv/bin/activate
 python -m pytest -q
 ```
 
+
+## Week 15 Day 3-4 outputs: GitHub Actions CI/CD Basics
+
+This pass adds a GitHub Actions workflow for CI checks on every push and pull request:
+
+- `.github/workflows/ci.yml` checks out the repository and sets up Python 3.11.
+- The workflow installs `requirements.txt` plus the local editable package with `pip install -e .`.
+- It runs the test suite with `python -m pytest -q`.
+- It builds the serving Docker image with `docker build -t financial-mlops-api:test .`.
+
+This is intentionally CI rather than full CD: it catches broken tests, dependency/import failures, API contract regressions, and Docker build issues before deployment. A future CD extension could authenticate to GHCR, ECR, or GAR, push the image, and deploy it to Cloud Run, ECS/Fargate, or another container runtime.
+
+To run the same local verification steps manually:
+
+```bash
+source .venv/bin/activate
+python -m pytest -q
+docker build -t financial-mlops-api:test .
+```
+
+> Note: Docker must be installed/running locally for the Docker build command. The GitHub-hosted Ubuntu runner includes Docker by default.
+
 ## Quick start
 
 ```bash
