@@ -206,6 +206,25 @@ Training data increases image size, slows builds and deployments, and can expose
 
 A reproducible image has an explicit base image, dependency file, deterministic build steps, and a clear runtime command. It avoids hidden host assumptions and excludes unnecessary local files with `.dockerignore`. For stricter production reproducibility, pin package versions and use immutable base image digests.
 
+
+## Week 15 Day 5 outputs: Monitoring and Production Concerns
+
+This pass adds a monitoring plan and production-oriented prediction logs:
+
+- `reports/ml_monitoring_plan.md` — defines prediction log fields, data-quality checks, feature/prediction/model drift checks, alert thresholds, retraining triggers, and auditability notes.
+- `src/financial_mlops/monitoring.py` — adds UTC timestamps, compact feature summaries, structured JSON events, and optional local CSV audit logging.
+- `src/financial_mlops/service.py` — logs request id, endpoint, ticker, model version, feature summary, prediction/probability, latency, and error status for each prediction attempt.
+- `tests/test_monitoring.py` — verifies compact feature summaries and CSV logging behavior.
+
+Optional local CSV audit logging:
+
+```bash
+MLOPS_PREDICTION_LOG_CSV=logs/predictions.csv python3 scripts/run_local_api.py
+python3 scripts/smoke_test_api.py
+```
+
+The CSV option is useful for demos and offline drift analysis. In production, the same structured events should be shipped to a real logging/metrics backend such as CloudWatch, GCP Logging, Datadog, Grafana Loki, Prometheus/OpenTelemetry, or an ML observability platform.
+
 ## Week 15 Interview Talking Points: Day 1-2 Testing
 
 ### How do you test ML code when model predictions can change?
