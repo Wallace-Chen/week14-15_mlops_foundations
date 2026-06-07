@@ -14,7 +14,7 @@ The goal is not maximum trading performance. The goal is to show that a research
 - Dockerized runtime
 - pytest coverage
 - GitHub Actions CI
-- structured monitoring logs and drift-monitoring plan
+- structured monitoring logs, drift-monitoring plan, and system-design writeup
 
 > A notebook is an experiment. A service is a contract.
 
@@ -36,7 +36,8 @@ The goal is not maximum trading performance. The goal is to show that a research
 │   └── metadata.json
 ├── reports/
 │   ├── api_examples.md
-│   └── ml_monitoring_plan.md
+│   ├── ml_monitoring_plan.md
+│   └── mlops_system_design.md
 ├── scripts/
 │   ├── build_docker.sh
 │   ├── run_local_api.py
@@ -248,6 +249,10 @@ python3 scripts/smoke_test_api.py
 ```
 
 In production, these events should go to a real logging/metrics backend such as CloudWatch, GCP Logging, Datadog, Grafana Loki, Prometheus/OpenTelemetry, or an ML observability platform.
+
+## System Design Report
+
+The paper-style system design writeup is in [reports/mlops_system_design.md](reports/mlops_system_design.md). It covers architecture, training vs serving, batch vs online inference, feature consistency, reproducibility, containerization, testing/CI, monitoring, failure modes, security basics, cloud deployment, limitations, and rollback strategy.
 
 ## Limitations
 
